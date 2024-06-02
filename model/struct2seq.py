@@ -75,19 +75,19 @@ class Struct2Seq(nn.Module):
     def forward(self, X, S, L, mask):
         """ Graph-conditioned sequence model """
         
-        print("mask", mask.shape)
+        #print("mask", mask.shape)
 
         # Prepare node and edge embeddings
         V, E, E_idx = self.features(X, L, mask)
-        print('donewith features ---------------------------------------------')
+        #print('donewith features ---------------------------------------------')
         h_V = self.W_v(V)
         h_E = self.W_e(E)
         
         # Encoder is unmasked self-attention
-        print(f'{mask.unsqueeze(-1).shape=}')
-        print(f'{E_idx.shape=}')
+        #print(f'{mask.unsqueeze(-1).shape=}')
+        #print(f'{E_idx.shape=}')
         mask_attend = gather_nodes(mask.unsqueeze(-1),  E_idx).squeeze(-1)
-        print(f'{mask_attend.shape=}')
+        #print(f'{mask_attend.shape=}')
         mask_attend = mask.unsqueeze(-1) * mask_attend
         
         for layer in self.encoder_layers:

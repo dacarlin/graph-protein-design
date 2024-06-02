@@ -84,9 +84,7 @@ class ProteinFeatures(nn.Module):
         D_adjust = D + (1. - mask_2D) * D_max
         D_neighbors, E_idx = torch.topk(D_adjust, self.top_k, dim=-1, largest=False)
         mask_neighbors = gather_edges(mask_2D.unsqueeze(-1), E_idx)
-        print(f'{mask_neighbors.shape=}') 
-        
-        
+        #print(f'{mask_neighbors.shape=}') 
 
         # Debug plot KNN
         # print(E_idx[:10,:10])

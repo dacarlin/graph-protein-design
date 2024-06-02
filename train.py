@@ -1,19 +1,17 @@
-from __future__ import print_function
-import json, time, os, sys, glob
+import json
+import time
+import os
+import sys
 import shutil
-
+import matplotlib.pyplot as plt 
 import numpy as np
 import torch
-from torch import optim
-from torch.utils.data import DataLoader
-from torch.utils.data.dataset import random_split, Subset
+from torch.utils.data.dataset import Subset
 from torch.utils.tensorboard import SummaryWriter
 
 
-
 # Library code
-sys.path.insert(0, '..')
-from struct2seq import *
+from model import struct2seq, noam_opt, data 
 from argparse import ArgumentParser
 
 
@@ -26,8 +24,8 @@ def get_args():
     parser.add_argument('--mpnn', action='store_true', help='Use MPNN updates instead of attention')
     parser.add_argument('--restore', type=str, default='', help='Checkpoint file for restoration')
     parser.add_argument('--name', type=str, default='', help='Experiment name for logging')
-    parser.add_argument('--file_data', type=str, default='../data/cath/chain_set.jsonl', help='input chain file')
-    parser.add_argument('--file_splits', type=str, default='../data/cath/chain_set_splits.json', help='input chain file')
+    parser.add_argument('--file_data', type=str, default='data/cath/chain_set.jsonl', help='input chain file')
+    parser.add_argument('--file_splits', type=str, default='data/cath/chain_set_splits.json', help='input chain file')
     parser.add_argument('--batch_tokens', type=int, default=10_000, help='batch size')
     parser.add_argument('--epochs', type=int, default=50, help='number of epochs')
     parser.add_argument('--seed', type=int, default=1111, help='random seed for reproducibility')
@@ -90,15 +88,6 @@ def featurize(batch, device):
     L_max = max([len(b['seq']) for b in batch])
     X = np.zeros([B, L_max, 4, 3])
     S = np.zeros([B, L_max], dtype=np.int32)
-
-    def shuffle_subset(n, p):
-        n_shuffle = np.random.binomial(n, p)
-        ix = np.arange(n)
-        ix_subset = np.random.choice(ix, size=n_shuffle, replace=False)
-        ix_subset_shuffled = np.copy(ix_subset)
-        np.random.shuffle(ix_subset_shuffled)
-        ix[ix_subset] = ix_subset_shuffled
-        return ix
 
     # Build the batch
     for i, b in enumerate(batch):
@@ -251,7 +240,7 @@ for e in range(args.epochs):
         total_step += 1
         writer.add_scalar("perplexity/train", np.exp(loss_av.cpu().data.numpy()), total_step)
         writer.add_scalar("perplexity/train-smoothed", np.exp(loss_av_smoothed.cpu().data.numpy()), total_step)
-        # print(total_step, elapsed_train, np.exp(loss_av.cpu().data.numpy()), np.exp(loss_av_smoothed.cpu().data.numpy()))
+        print(f"{total_step=} {elapsed_train=:.2f} perplex={np.exp(loss_av.cpu().data.numpy()):.2f} smoothed={np.exp(loss_av_smoothed.cpu().data.numpy()):.2f}")
 
         # Accumulate true loss
         train_sum += torch.sum(loss * mask).cpu().data.numpy()
@@ -273,8 +262,8 @@ for e in range(args.epochs):
         #     }, base_folder + 'checkpoints/epoch{}_step{}.pt'.format(e+1, total_step))
 
     # Train image
-    P = np.exp(log_probs.cpu().data.numpy())[0].T
-    writer.add_image(batch[0]["name"], P, total_step)
+    #P = np.exp(log_probs.cpu().data.numpy())[0].T
+    #writer.add_image(batch[0]["name"], P, total_step)
     #plot_log_probs(log_probs, total_step, folder='{}plots/train_{}_'.format(base_folder, batch[0]['name']))
 
     # Validation epoch
@@ -282,7 +271,7 @@ for e in range(args.epochs):
     with torch.no_grad():
         validation_sum, validation_weights = 0., 0.
         for _, batch in enumerate(loader_validation):
-            X, S, mask, lengths = featurize(batch, device, shuffle_fraction=args.shuffle)
+            X, S, mask, lengths = featurize(batch, device)
             log_probs = model(X, S, lengths, mask)
             loss, loss_av = loss_nll(S, log_probs, mask)
 
