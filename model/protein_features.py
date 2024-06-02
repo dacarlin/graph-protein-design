@@ -58,7 +58,7 @@ class ProteinFeatures(nn.Module):
             'full': (6, num_positional_embeddings + num_rbf + 7),
             'dist': (6, num_positional_embeddings + num_rbf),
             'hbonds': (3, 2 * num_positional_embeddings),
-            "justas": (6, num_positional_embeddings + num_rbf * 25), 
+            "justas": (3, num_positional_embeddings + num_rbf * 25), 
         }
 
         # Positional encoding
@@ -67,7 +67,7 @@ class ProteinFeatures(nn.Module):
         
         # Normalization and embedding
         node_in, edge_in = self.feature_dimensions[features_type]
-        self.node_embedding = nn.Linear(node_in,  node_features, bias=True)
+        self.node_embedding = nn.Linear(node_in, node_features, bias=True)
         self.edge_embedding = nn.Linear(edge_in, edge_features, bias=True)
         self.norm_nodes = Normalize(node_features)
         self.norm_edges = Normalize(edge_features)
@@ -394,8 +394,6 @@ class ProteinFeatures(nn.Module):
             N = X[:,:,0,:]
             C = X[:,:,2,:]
             O = X[:,:,3,:]
-
-            D_neighbors, E_idx = self._dist(Ca, mask)
 
             RBF_all = []
             RBF_all.append(self._rbf(D_neighbors)) #Ca-Ca

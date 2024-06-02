@@ -240,7 +240,7 @@ for e in range(args.epochs):
         total_step += 1
         writer.add_scalar("perplexity/train", np.exp(loss_av.cpu().data.numpy()), total_step)
         writer.add_scalar("perplexity/train-smoothed", np.exp(loss_av_smoothed.cpu().data.numpy()), total_step)
-        print(f"{total_step=} {elapsed_train=:.2f} perplex={np.exp(loss_av.cpu().data.numpy()):.2f} smoothed={np.exp(loss_av_smoothed.cpu().data.numpy()):.2f}")
+        print(f"{e=} {total_step=} {elapsed_train=:.2f} perplex={np.exp(loss_av.cpu().data.numpy()):.2f} smoothed={np.exp(loss_av_smoothed.cpu().data.numpy()):.2f}")
 
         # Accumulate true loss
         train_sum += torch.sum(loss * mask).cpu().data.numpy()
@@ -283,16 +283,16 @@ for e in range(args.epochs):
     train_perplexity = np.exp(train_loss)
     validation_loss = validation_sum / validation_weights
     validation_perplexity = np.exp(validation_loss)
-    print('Perplexity\tTrain:{}\t\tValidation:{}'.format(train_perplexity, validation_perplexity))
+    print('---------------------------------------------------------')
+    print(f'end of epoch {e + 1}')
+    print(f"{train_loss=:.2f}\n{train_perplexity=:.2f}\n{validation_loss=:.2f}\n{validation_perplexity=:.2f}")
+    print('---------------------------------------------------------')
 
     # Validation image
     plot_log_probs(log_probs, total_step, folder='{}plots/valid_{}_'.format(base_folder, batch[0]['name']))
 
-    # with open(logfile, 'a') as f:
-    #     f.write('{}\t{}\t{}\n'.format(e, train_perplexity, validation_perplexity))
-
-    writer.add_scalar("epoch/train/perplexity", train_perplexity)
-    writer.add_scalar("epoch/validation/perplexity", validation_perplexity)
+    writer.add_scalar("epoch/train/perplexity", train_perplexity, total_step)
+    writer.add_scalar("epoch/validation/perplexity", validation_perplexity, total_step)
 
     # Save the model
     checkpoint_filename = base_folder + 'checkpoints/epoch{}_step{}.pt'.format(e+1, total_step)
